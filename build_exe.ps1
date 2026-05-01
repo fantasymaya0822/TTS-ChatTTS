@@ -1,0 +1,6 @@
+$ErrorActionPreference = "Stop"
+Set-Location -LiteralPath $PSScriptRoot
+python -m pip install -r requirements-dev.txt
+python -m PyInstaller .\novel_edge_tts.spec --clean --noconfirm
+Write-Host ""
+Write-Host "Built: $PSScriptRoot\dist\NovelEdgeTTS\NovelEdgeTTS.exe"

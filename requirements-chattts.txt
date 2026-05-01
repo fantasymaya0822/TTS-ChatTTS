@@ -1,0 +1,4 @@
+-r requirements.txt
+ChatTTS>=0.2.5
+torch
+numpy
