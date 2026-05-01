@@ -16,6 +16,21 @@
 
 ## 啟動 Fish Speech Server
 
+本專案提供兩個 WSL 輔助腳本：
+
+```bash
+bash scripts/setup_fish_speech_wsl.sh
+bash scripts/run_fish_speech_server_wsl.sh
+```
+
+目前偵測到的環境：
+
+- WSL2 / Ubuntu 可用
+- Docker 未安裝
+- Windows 端未偵測到 `nvidia-smi`
+
+所以預設腳本走 CPU 安裝。CPU 可用來做功能驗證，但長篇小說會很慢；實用上仍建議 CUDA GPU。
+
 官方文件的本機 server 範例：
 
 ```bash
@@ -41,6 +56,20 @@ hf download fishaudio/s2-pro --local-dir checkpoints/s2-pro
    - `本機切段字數`: 建議 300-800
    - `API chunk_length`: 建議 300
 3. 按 `2. 開始轉檔`
+
+## 健康檢查
+
+Windows 端可用：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\check_fish_server.ps1
+```
+
+API 產音測試：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\test_fish_api.ps1
+```
 
 ## 注意
 

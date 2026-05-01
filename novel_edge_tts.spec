@@ -10,6 +10,7 @@ hiddenimports = []
 hiddenimports += collect_submodules("edge_tts")
 hiddenimports += collect_submodules("aiohttp")
 hiddenimports += collect_submodules("charset_normalizer")
+hiddenimports += ["ormsgpack"]
 
 a = Analysis(
     ["novel_tts/gui.py"],

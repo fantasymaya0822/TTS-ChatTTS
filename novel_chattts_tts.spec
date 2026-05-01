@@ -15,6 +15,7 @@ hiddenimports += collect_submodules("torch")
 hiddenimports += collect_submodules("torchaudio")
 hiddenimports += collect_submodules("transformers")
 hiddenimports += collect_submodules("huggingface_hub")
+hiddenimports += ["ormsgpack"]
 
 a = Analysis(
     ["novel_tts/gui.py"],
