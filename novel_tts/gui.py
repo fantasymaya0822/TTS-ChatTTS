@@ -44,6 +44,7 @@ from novel_tts.chattts_provider import (
     synthesize_chattts_preview,
     synthesize_project_chattts,
 )
+from novel_tts.fish_provider import DEFAULT_FISH_MAX_CHARS, DEFAULT_FISH_SERVER_URL, synthesize_project_fish
 from novel_tts.i18n import t
 from novel_tts.project import open_project as load_project
 from novel_tts.workflow import prepare_project, summary_json
@@ -178,6 +179,7 @@ class MainWindow(QMainWindow):
         self.provider_combo = QComboBox()
         self.provider_combo.addItem("Edge TTS", "edge")
         self.provider_combo.addItem("ChatTTS 本地模型", "chattts")
+        self.provider_combo.addItem("Fish Speech API", "fish")
         self.voice_combo = QComboBox()
         self.voice_combo.setEditable(True)
         self.voice_combo.addItem(DEFAULT_EDGE_VOICE, DEFAULT_EDGE_VOICE)
@@ -197,6 +199,20 @@ class MainWindow(QMainWindow):
         self.chattts_seed_combo = QComboBox()
         self.chattts_seed_combo.setEditable(True)
         self.chattts_preview_text_edit = QLineEdit(DEFAULT_PREVIEW_TEXT)
+        self.fish_url_edit = QLineEdit(DEFAULT_FISH_SERVER_URL)
+        self.fish_reference_id_edit = QLineEdit()
+        self.fish_api_key_edit = QLineEdit()
+        self.fish_seed_spin = QSpinBox()
+        self.fish_seed_spin.setRange(0, 2_147_483_647)
+        self.fish_seed_spin.setSpecialValueText("隨機")
+        self.fish_chunk_spin = QSpinBox()
+        self.fish_chunk_spin.setRange(100, 2000)
+        self.fish_chunk_spin.setSingleStep(100)
+        self.fish_chunk_spin.setValue(DEFAULT_FISH_MAX_CHARS)
+        self.fish_api_chunk_spin = QSpinBox()
+        self.fish_api_chunk_spin.setRange(100, 1000)
+        self.fish_api_chunk_spin.setSingleStep(50)
+        self.fish_api_chunk_spin.setValue(300)
         self.chapter_spin = QSpinBox()
         self.chapter_spin.setRange(0, 9999)
         self.chapter_spin.setSpecialValueText(t("all"))
@@ -261,6 +277,7 @@ class MainWindow(QMainWindow):
         tabs.addTab(self.build_global_tab(), t("global_options"))
         tabs.addTab(self.build_edge_tab(), t("edge_options"))
         tabs.addTab(self.build_chattts_tab(), t("chattts_options"))
+        tabs.addTab(self.build_fish_tab(), "Fish Speech")
         root.addWidget(tabs)
 
         button_row = QHBoxLayout()
@@ -320,6 +337,18 @@ class MainWindow(QMainWindow):
         layout.addRow("", self.preview_voice_button)
         return tab
 
+    def build_fish_tab(self) -> QWidget:
+        tab = QWidget()
+        layout = QFormLayout(tab)
+        layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        layout.addRow("Server URL", self.fish_url_edit)
+        layout.addRow("Reference ID", self.fish_reference_id_edit)
+        layout.addRow("API Key", self.fish_api_key_edit)
+        layout.addRow("Seed", self.fish_seed_spin)
+        layout.addRow("本機切段字數", self.fish_chunk_spin)
+        layout.addRow("API chunk_length", self.fish_api_chunk_spin)
+        return tab
+
     def _connect(self) -> None:
         self.rate_slider.valueChanged.connect(self.update_rate_label)
         self.prepare_button.clicked.connect(self.prepare_project)
@@ -344,6 +373,12 @@ class MainWindow(QMainWindow):
         self.chattts_preview_text_edit.setText(
             str(self.settings.value("chattts/preview_text", DEFAULT_PREVIEW_TEXT))
         )
+        self.fish_url_edit.setText(str(self.settings.value("fish/url", DEFAULT_FISH_SERVER_URL)))
+        self.fish_reference_id_edit.setText(str(self.settings.value("fish/reference_id", "")))
+        self.fish_api_key_edit.setText(str(self.settings.value("fish/api_key", "")))
+        self.fish_seed_spin.setValue(int(self.settings.value("fish/seed", 0)))
+        self.fish_chunk_spin.setValue(int(self.settings.value("fish/max_chunk_chars", DEFAULT_FISH_MAX_CHARS)))
+        self.fish_api_chunk_spin.setValue(int(self.settings.value("fish/api_chunk_length", 300)))
         self.load_saved_seeds()
 
     def _save_settings(self) -> None:
@@ -355,6 +390,12 @@ class MainWindow(QMainWindow):
         self.settings.setValue("chattts/speaker_seed", self.chattts_seed_spin.value())
         self.settings.setValue("chattts/preview_text", self.chattts_preview_text_edit.text().strip())
         self.settings.setValue("chattts/saved_seeds", ",".join(self.saved_seed_values()))
+        self.settings.setValue("fish/url", self.fish_url_edit.text().strip())
+        self.settings.setValue("fish/reference_id", self.fish_reference_id_edit.text().strip())
+        self.settings.setValue("fish/api_key", self.fish_api_key_edit.text().strip())
+        self.settings.setValue("fish/seed", self.fish_seed_spin.value())
+        self.settings.setValue("fish/max_chunk_chars", self.fish_chunk_spin.value())
+        self.settings.setValue("fish/api_chunk_length", self.fish_api_chunk_spin.value())
 
     def load_saved_seeds(self) -> None:
         saved = str(self.settings.value("chattts/saved_seeds", "42")).strip()
@@ -480,6 +521,22 @@ class MainWindow(QMainWindow):
                 skip_refine_text=True,
                 speaker_seed=None if self.chattts_seed_spin.value() == 0 else self.chattts_seed_spin.value(),
                 source="huggingface",
+                ffmpeg="ffmpeg",
+            )
+        elif self.provider_combo.currentData() == "fish":
+            worker = Worker(
+                "正在使用 Fish Speech API 轉檔",
+                synthesize_project_fish,
+                progress_arg="progress_callback",
+                project=load_project(self.project_path),
+                chapter=None if self.chapter_spin.value() == 0 else self.chapter_spin.value(),
+                force=self.force_check.isChecked(),
+                server_url=self.fish_url_edit.text().strip() or DEFAULT_FISH_SERVER_URL,
+                api_key=self.fish_api_key_edit.text().strip(),
+                reference_id=self.fish_reference_id_edit.text().strip(),
+                seed=None if self.fish_seed_spin.value() == 0 else self.fish_seed_spin.value(),
+                max_chunk_chars=self.fish_chunk_spin.value(),
+                chunk_length=self.fish_api_chunk_spin.value(),
                 ffmpeg="ffmpeg",
             )
         else:
