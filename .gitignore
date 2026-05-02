@@ -4,8 +4,10 @@ __pycache__/
 build/
 dist/
 output/
+external/
 
 .venv/
+.venv-*/
 venv/
 env/
 
