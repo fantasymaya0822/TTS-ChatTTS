@@ -50,6 +50,7 @@ python tools/api_server.py \
    - `Seed`: 固定生成隨機性
    - `本機切段字數`: 建議 300-800
    - `API chunk_length`: 建議 300
+   - `Max new tokens`: 建議先用 32 測試；數值越大越慢、音訊可能越長
 3. 按 `2. 開始轉檔`
 
 ## 檢查 server

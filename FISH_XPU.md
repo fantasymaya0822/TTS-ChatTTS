@@ -73,7 +73,7 @@ It reuses the model downloaded in WSL:
 
 Keep Edge TTS as the long-novel main path. Fish Speech XPU is worth keeping as an experimental local-quality option, but it still needs more work before being practical for full novels:
 
-- avoid `max_new_tokens=0` for XPU/CPU requests
-- add a GUI field for Fish `max_new_tokens`
+- GUI now avoids `max_new_tokens=0` and exposes a Fish `Max new tokens` field
+- the Fish tab has a `Use local XPU server` button for `http://127.0.0.1:8081/v1/tts`
 - avoid PowerShell stdin encoding for Chinese tests
 - consider copying checkpoints to a local Windows path instead of reading through WSL UNC

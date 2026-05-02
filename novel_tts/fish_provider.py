@@ -13,7 +13,9 @@ from novel_tts.segmenter import split_segments
 
 
 DEFAULT_FISH_SERVER_URL = "http://127.0.0.1:8080/v1/tts"
+DEFAULT_FISH_XPU_SERVER_URL = "http://127.0.0.1:8081/v1/tts"
 DEFAULT_FISH_MAX_CHARS = 500
+DEFAULT_FISH_MAX_NEW_TOKENS = 32
 
 
 @dataclass(frozen=True)
@@ -35,6 +37,7 @@ def synthesize_project_fish(
     seed: int | None = None,
     max_chunk_chars: int = DEFAULT_FISH_MAX_CHARS,
     chunk_length: int = 300,
+    max_new_tokens: int = DEFAULT_FISH_MAX_NEW_TOKENS,
     top_p: float = 0.8,
     temperature: float = 0.8,
     repetition_penalty: float = 1.1,
@@ -96,6 +99,7 @@ def synthesize_project_fish(
                     reference_id=reference_id,
                     seed=seed,
                     chunk_length=chunk_length,
+                    max_new_tokens=max_new_tokens,
                     top_p=top_p,
                     temperature=temperature,
                     repetition_penalty=repetition_penalty,
@@ -141,6 +145,7 @@ def request_fish_tts(
     reference_id: str = "",
     seed: int | None = None,
     chunk_length: int = 300,
+    max_new_tokens: int = DEFAULT_FISH_MAX_NEW_TOKENS,
     top_p: float = 0.8,
     temperature: float = 0.8,
     repetition_penalty: float = 1.1,
@@ -156,7 +161,7 @@ def request_fish_tts(
         "reference_id": reference_id.strip() or None,
         "format": "mp3",
         "latency": "normal",
-        "max_new_tokens": 0,
+        "max_new_tokens": max(1, int(max_new_tokens)),
         "chunk_length": chunk_length,
         "top_p": top_p,
         "repetition_penalty": repetition_penalty,

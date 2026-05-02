@@ -22,6 +22,9 @@ if (-not (Test-Path $checkpoint)) {
 New-Item -ItemType Directory -Force (Join-Path $PSScriptRoot "output") | Out-Null
 Remove-Item -LiteralPath $stdout, $stderr -Force -ErrorAction SilentlyContinue
 
+$env:PYTHONUTF8 = "1"
+$env:PYTHONIOENCODING = "utf-8"
+
 $args = @(
     "-u",
     "tools\api_server.py",

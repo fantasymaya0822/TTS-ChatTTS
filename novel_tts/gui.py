@@ -44,7 +44,13 @@ from novel_tts.chattts_provider import (
     synthesize_chattts_preview,
     synthesize_project_chattts,
 )
-from novel_tts.fish_provider import DEFAULT_FISH_MAX_CHARS, DEFAULT_FISH_SERVER_URL, synthesize_project_fish
+from novel_tts.fish_provider import (
+    DEFAULT_FISH_MAX_CHARS,
+    DEFAULT_FISH_MAX_NEW_TOKENS,
+    DEFAULT_FISH_SERVER_URL,
+    DEFAULT_FISH_XPU_SERVER_URL,
+    synthesize_project_fish,
+)
 from novel_tts.i18n import t
 from novel_tts.project import open_project as load_project
 from novel_tts.workflow import prepare_project, summary_json
@@ -200,6 +206,7 @@ class MainWindow(QMainWindow):
         self.chattts_seed_combo.setEditable(True)
         self.chattts_preview_text_edit = QLineEdit(DEFAULT_PREVIEW_TEXT)
         self.fish_url_edit = QLineEdit(DEFAULT_FISH_SERVER_URL)
+        self.fish_xpu_url_button = QPushButton("Use local XPU server")
         self.fish_reference_id_edit = QLineEdit()
         self.fish_api_key_edit = QLineEdit()
         self.fish_seed_spin = QSpinBox()
@@ -213,6 +220,10 @@ class MainWindow(QMainWindow):
         self.fish_api_chunk_spin.setRange(100, 1000)
         self.fish_api_chunk_spin.setSingleStep(50)
         self.fish_api_chunk_spin.setValue(300)
+        self.fish_max_new_tokens_spin = QSpinBox()
+        self.fish_max_new_tokens_spin.setRange(1, 2048)
+        self.fish_max_new_tokens_spin.setSingleStep(8)
+        self.fish_max_new_tokens_spin.setValue(DEFAULT_FISH_MAX_NEW_TOKENS)
         self.chapter_spin = QSpinBox()
         self.chapter_spin.setRange(0, 9999)
         self.chapter_spin.setSpecialValueText(t("all"))
@@ -342,11 +353,13 @@ class MainWindow(QMainWindow):
         layout = QFormLayout(tab)
         layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
         layout.addRow("Server URL", self.fish_url_edit)
+        layout.addRow("", self.fish_xpu_url_button)
         layout.addRow("Reference ID", self.fish_reference_id_edit)
         layout.addRow("API Key", self.fish_api_key_edit)
         layout.addRow("Seed", self.fish_seed_spin)
         layout.addRow("本機切段字數", self.fish_chunk_spin)
         layout.addRow("API chunk_length", self.fish_api_chunk_spin)
+        layout.addRow("Max new tokens", self.fish_max_new_tokens_spin)
         return tab
 
     def _connect(self) -> None:
@@ -355,6 +368,7 @@ class MainWindow(QMainWindow):
         self.voices_button.clicked.connect(self.load_voices)
         self.synthesize_button.clicked.connect(self.run_synthesize)
         self.preview_voice_button.clicked.connect(self.preview_chattts_voice)
+        self.fish_xpu_url_button.clicked.connect(self.use_fish_xpu_server)
         self.save_seed_button.clicked.connect(self.save_current_seed)
         self.chattts_seed_combo.currentTextChanged.connect(self.on_seed_combo_changed)
         self.open_project_button.clicked.connect(self.open_project)
@@ -379,6 +393,9 @@ class MainWindow(QMainWindow):
         self.fish_seed_spin.setValue(int(self.settings.value("fish/seed", 0)))
         self.fish_chunk_spin.setValue(int(self.settings.value("fish/max_chunk_chars", DEFAULT_FISH_MAX_CHARS)))
         self.fish_api_chunk_spin.setValue(int(self.settings.value("fish/api_chunk_length", 300)))
+        self.fish_max_new_tokens_spin.setValue(
+            int(self.settings.value("fish/max_new_tokens", DEFAULT_FISH_MAX_NEW_TOKENS))
+        )
         self.load_saved_seeds()
 
     def _save_settings(self) -> None:
@@ -396,6 +413,12 @@ class MainWindow(QMainWindow):
         self.settings.setValue("fish/seed", self.fish_seed_spin.value())
         self.settings.setValue("fish/max_chunk_chars", self.fish_chunk_spin.value())
         self.settings.setValue("fish/api_chunk_length", self.fish_api_chunk_spin.value())
+        self.settings.setValue("fish/max_new_tokens", self.fish_max_new_tokens_spin.value())
+
+    def use_fish_xpu_server(self) -> None:
+        self.fish_url_edit.setText(DEFAULT_FISH_XPU_SERVER_URL)
+        self._save_settings()
+        self.append_log(f"Fish Speech Server URL: {DEFAULT_FISH_XPU_SERVER_URL}")
 
     def load_saved_seeds(self) -> None:
         saved = str(self.settings.value("chattts/saved_seeds", "42")).strip()
@@ -537,6 +560,7 @@ class MainWindow(QMainWindow):
                 seed=None if self.fish_seed_spin.value() == 0 else self.fish_seed_spin.value(),
                 max_chunk_chars=self.fish_chunk_spin.value(),
                 chunk_length=self.fish_api_chunk_spin.value(),
+                max_new_tokens=self.fish_max_new_tokens_spin.value(),
                 ffmpeg="ffmpeg",
             )
         else:
