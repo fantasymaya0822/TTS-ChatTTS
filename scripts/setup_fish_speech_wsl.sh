@@ -20,7 +20,7 @@ python -m pip install -e .[cpu]
 python -m pip install "huggingface_hub[cli]"
 
 mkdir -p checkpoints/s2-pro
-huggingface-cli download fishaudio/s2-pro --local-dir checkpoints/s2-pro
+HF_HUB_DISABLE_XET=1 huggingface-cli download fishaudio/s2-pro --local-dir checkpoints/s2-pro
 
 cat <<'MSG'
 
